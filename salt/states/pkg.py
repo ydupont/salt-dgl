@@ -375,27 +375,34 @@ def _find_install_targets(name=None,
                 if not (name in cur_pkgs and version in (None, cur_pkgs[name]))
             ])
             if not_installed:
-                problems = _preflight_check(not_installed, **kwargs)
-                comments = []
-                if problems.get('no_suggest'):
-                    comments.append(
-                        'The following package(s) were not found, and no possible '
-                        'matches were found in the package db: '
-                        '{0}'.format(', '.join(sorted(problems['no_suggest'])))
-                    )
-                if problems.get('suggest'):
-                    for pkgname, suggestions in six.iteritems(problems['suggest']):
+                try:
+                    problems = _preflight_check(not_installed, **kwargs)
+                except CommandExecutionError:
+                    pass
+                else:
+                    comments = []
+                    if problems.get('no_suggest'):
                         comments.append(
-                            'Package \'{0}\' not found (possible matches: {1})'
-                            .format(pkgname, ', '.join(suggestions))
+                            'The following package(s) were not found, and no '
+                            'possible matches were found in the package db: '
+                            '{0}'.format(
+                                ', '.join(sorted(problems['no_suggest']))
+                            )
                         )
-                if comments:
-                    if len(comments) > 1:
-                        comments.append('')
-                    return {'name': name,
-                            'changes': {},
-                            'result': False,
-                            'comment': '. '.join(comments).rstrip()}
+                    if problems.get('suggest'):
+                        for pkgname, suggestions in \
+                                six.iteritems(problems['suggest']):
+                            comments.append(
+                                'Package \'{0}\' not found (possible matches: '
+                                '{1})'.format(pkgname, ', '.join(suggestions))
+                            )
+                    if comments:
+                        if len(comments) > 1:
+                            comments.append('')
+                        return {'name': name,
+                                'changes': {},
+                                'result': False,
+                                'comment': '. '.join(comments).rstrip()}
 
     # Find out which packages will be targeted in the call to pkg.install
     targets = {}
@@ -516,11 +523,16 @@ def _verify_install(desired, new_pkgs):
 
         if __grains__['os'] == 'FreeBSD' and origin:
             cver = [k for k, v in six.iteritems(new_pkgs) if v['origin'] == pkgname]
+        elif __grains__['os_family'] == 'Debian':
+            cver = new_pkgs.get(pkgname.split('=')[0])
         else:
             cver = new_pkgs.get(pkgname)
 
         if not cver:
             failed.append(pkgname)
+            continue
+        elif pkgver == 'latest':
+            ok.append(pkgname)
             continue
         elif not __salt__['pkg_resource.version_clean'](pkgver):
             ok.append(pkgname)
@@ -881,7 +893,7 @@ def installed(
         reinstalled. This is supported in both :mod:`apt <salt.modules.aptpkg>`
         and :mod:`yumpkg <salt.modules.yumpkg>`.
 
-        .. versionadded:: Boron
+        .. versionadded:: 2016.3.0
 
         Example:
 
@@ -956,10 +968,9 @@ def installed(
 
     kwargs['saltenv'] = __env__
     rtag = __gen_rtag()
-    refresh = bool(
-        salt.utils.is_true(refresh)
-        or (os.path.isfile(rtag) and refresh is not False)
-    )
+    refresh = bool(salt.utils.is_true(refresh) or
+                   (os.path.isfile(rtag) and salt.utils.is_true(refresh))
+                   )
     if not isinstance(pkg_verify, list):
         pkg_verify = pkg_verify is True
     if (pkg_verify or isinstance(pkg_verify, list)) \
@@ -1446,9 +1457,9 @@ def latest(
 
     '''
     rtag = __gen_rtag()
-    refresh = bool(
-        salt.utils.is_true(refresh) or (os.path.isfile(rtag) and refresh is not False)
-    )
+    refresh = bool(salt.utils.is_true(refresh) or
+                   (os.path.isfile(rtag) and salt.utils.is_true(refresh))
+                   )
 
     if kwargs.get('sources'):
         return {'name': name,
@@ -1595,7 +1606,9 @@ def latest(
         if changes:
             # Find failed and successful updates
             failed = [x for x in targets
-                      if not changes.get(x) or changes[x]['new'] != targets[x]]
+                      if not changes.get(x) or
+                      changes[x].get('new') != targets[x] and
+                      targets[x] != 'latest']
             successful = [x for x in targets if x not in failed]
 
             comments = []
@@ -1949,7 +1962,7 @@ def group_installed(name, skip=None, include=None, **kwargs):
                 - include:
                   - haproxy
 
-        .. versionchanged:: Boron
+        .. versionchanged:: 2016.3.0
             This option can no longer be passed as a comma-separated list, it
             must now be passed as a list (as shown in the above example).
 

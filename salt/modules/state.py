@@ -73,6 +73,10 @@ def _set_retcode(ret):
     '''
     Set the return code based on the data back from the state system
     '''
+
+    # Set default retcode to 0
+    __context__['retcode'] = 0
+
     if isinstance(ret, list):
         __context__['retcode'] = 1
         return
@@ -260,12 +264,14 @@ def template(tem, queue=False, **kwargs):
     '''
     if 'env' in kwargs:
         salt.utils.warn_until(
-            'Boron',
-            'Passing a salt environment should be done using \'saltenv\' '
-            'not \'env\'. This functionality will be removed in Salt Boron.'
-        )
-        saltenv = kwargs['env']
-    elif 'saltenv' in kwargs:
+            'Oxygen',
+            'Parameter \'env\' has been detected in the argument list.  This '
+            'parameter is no longer used and has been replaced by \'saltenv\' '
+            'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+            )
+        kwargs.pop('env')
+
+    if 'saltenv' in kwargs:
         saltenv = kwargs['saltenv']
     else:
         saltenv = ''
@@ -482,7 +488,7 @@ def highstate(test=None,
         Additional pillar data to use for this function. Any pillar keys
         specified here will overwrite matching keys in the Pillar data.
 
-        .. versionchanged:: Boron
+        .. versionchanged:: 2016.3.0
             GPG-encrypted CLI Pillar data is now supported via the GPG
             renderer. See :ref:`here <encrypted-cli-pillar-data>` for details.
 
@@ -490,7 +496,7 @@ def highstate(test=None,
         Specify which renderer to use to decrypt encrypted data located within
         the ``pillar`` value. Currently, only ``gpg`` is supported.
 
-        .. versionadded:: Boron
+        .. versionadded:: 2016.3.0
 
     queue : False
         Instead of failing immediately when another state run is in progress,
@@ -550,12 +556,14 @@ def highstate(test=None,
 
     if 'env' in kwargs:
         salt.utils.warn_until(
-            'Boron',
-            'Passing a salt environment should be done using \'saltenv\' '
-            'not \'env\'. This functionality will be removed in Salt Boron.'
-        )
-        opts['environment'] = kwargs['env']
-    elif 'saltenv' in kwargs:
+            'Oxygen',
+            'Parameter \'env\' has been detected in the argument list.  This '
+            'parameter is no longer used and has been replaced by \'saltenv\' '
+            'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+            )
+        kwargs.pop('env')
+
+    if 'saltenv' in kwargs:
         opts['environment'] = kwargs['saltenv']
 
     pillar = kwargs.get('pillar')
@@ -604,7 +612,6 @@ def highstate(test=None,
 
     serial = salt.payload.Serial(__opts__)
     cache_file = os.path.join(__opts__['cachedir'], 'highstate.p')
-
     _set_retcode(ret)
     # Work around Windows multiprocessing bug, set __opts__['test'] back to
     # value from before this function was run.
@@ -617,7 +624,6 @@ def sls(mods,
         test=None,
         exclude=None,
         queue=False,
-        env=None,
         pillarenv=None,
         **kwargs):
     '''
@@ -633,7 +639,7 @@ def sls(mods,
         Additional pillar data to use for this function. Any pillar keys
         specified here will overwrite matching keys in the Pillar data.
 
-        .. versionchanged:: Boron
+        .. versionchanged:: 2016.3.0
             GPG-encrypted CLI Pillar data is now supported via the GPG
             renderer. See :ref:`here <encrypted-cli-pillar-data>` for details.
 
@@ -641,7 +647,7 @@ def sls(mods,
         Specify which renderer to use to decrypt encrypted data located within
         the ``pillar`` value. Currently, only ``gpg`` is supported.
 
-        .. versionadded:: Boron
+        .. versionadded:: 2016.3.0
 
     queue : ``False``
         Instead of failing immediately when another state run is in progress,
@@ -692,14 +698,15 @@ def sls(mods,
         salt '*' state.sls myslsfile pillar="{foo: 'Foo!', bar: 'Bar!'}"
     '''
     concurrent = kwargs.get('concurrent', False)
-    if env is not None:
+    if 'env' in kwargs:
         salt.utils.warn_until(
-            'Boron',
-            'Passing a salt environment should be done using \'saltenv\' '
-            'not \'env\'. This functionality will be removed in Salt Boron.'
-        )
-        # Backwards compatibility
-        saltenv = env
+            'Oxygen',
+            'Parameter \'env\' has been detected in the argument list.  This '
+            'parameter is no longer used and has been replaced by \'saltenv\' '
+            'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+            )
+        kwargs.pop('env')
+
     if saltenv is None:
         if __opts__.get('environment', None):
             saltenv = __opts__['environment']
@@ -821,7 +828,6 @@ def sls(mods,
     except (IOError, OSError):
         msg = 'Unable to write to SLS cache file {0}. Check permission.'
         log.error(msg.format(cache_file))
-
     _set_retcode(ret)
     # Work around Windows multiprocessing bug, set __opts__['test'] back to
     # value from before this function was run.
@@ -935,8 +941,7 @@ def show_highstate(queue=False, **kwargs):
         ret = st_.compile_highstate()
     finally:
         st_.pop_active()
-    if isinstance(ret, list):
-        __context__['retcode'] = 1
+    _set_retcode(ret)
     return ret
 
 
@@ -1024,12 +1029,10 @@ def show_low_sls(mods,
                  saltenv='base',
                  test=None,
                  queue=False,
-                 env=None,
                  **kwargs):
     '''
     Display the low data from a specific sls. The default environment is
-    ``base``, use ``saltenv`` (``env`` in Salt 0.17.x and older) to specify a
-    different environment.
+    ``base``, use ``saltenv`` to specify a different environment.
 
     CLI Example:
 
@@ -1037,14 +1040,15 @@ def show_low_sls(mods,
 
         salt '*' state.show_low_sls foo
     '''
-    if env is not None:
+    if 'env' in kwargs:
         salt.utils.warn_until(
-            'Boron',
-            'Passing a salt environment should be done using \'saltenv\' '
-            'not \'env\'. This functionality will be removed in Salt Boron.'
-        )
-        # Backwards compatibility
-        saltenv = env
+            'Oxygen',
+            'Parameter \'env\' has been detected in the argument list.  This '
+            'parameter is no longer used and has been replaced by \'saltenv\' '
+            'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+            )
+        kwargs.pop('env')
+
     conflict = _check_queue(queue, kwargs)
     if conflict is not None:
         return conflict
@@ -1075,11 +1079,11 @@ def show_low_sls(mods,
     return ret
 
 
-def show_sls(mods, saltenv='base', test=None, queue=False, env=None, **kwargs):
+def show_sls(mods, saltenv='base', test=None, queue=False, **kwargs):
     '''
     Display the state data from a specific sls or list of sls files on the
-    master. The default environment is ``base``, use ``saltenv`` (``env`` in
-    Salt 0.17.x and older) to specify a different environment.
+    master. The default environment is ``base``, use ``saltenv`` to specify a
+    different environment.
 
     This function does not support topfiles.  For ``top.sls`` please use
     ``show_top`` instead.
@@ -1092,14 +1096,15 @@ def show_sls(mods, saltenv='base', test=None, queue=False, env=None, **kwargs):
 
         salt '*' state.show_sls core,edit.vim dev
     '''
-    if env is not None:
+    if 'env' in kwargs:
         salt.utils.warn_until(
-            'Boron',
-            'Passing a salt environment should be done using \'saltenv\' '
-            'not \'env\'. This functionality will be removed in Salt Boron.'
-        )
-        # Backwards compatibility
-        saltenv = env
+            'Oxygen',
+            'Parameter \'env\' has been detected in the argument list.  This '
+            'parameter is no longer used and has been replaced by \'saltenv\' '
+            'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+            )
+        kwargs.pop('env')
+
     conflict = _check_queue(queue, kwargs)
     if conflict is not None:
         return conflict
@@ -1153,14 +1158,17 @@ def show_top(queue=False, **kwargs):
         salt '*' state.show_top
     '''
     opts = copy.deepcopy(__opts__)
+
     if 'env' in kwargs:
         salt.utils.warn_until(
-            'Boron',
-            'Passing a salt environment should be done using \'saltenv\' '
-            'not \'env\'. This functionality will be removed in Salt Boron.'
-        )
-        opts['environment'] = kwargs['env']
-    elif 'saltenv' in kwargs:
+            'Oxygen',
+            'Parameter \'env\' has been detected in the argument list.  This '
+            'parameter is no longer used and has been replaced by \'saltenv\' '
+            'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+            )
+        kwargs.pop('env')
+
+    if 'saltenv' in kwargs:
         opts['environment'] = kwargs['saltenv']
     conflict = _check_queue(queue, kwargs)
     if conflict is not None:
@@ -1491,7 +1499,7 @@ def event(tagmatch='*',
     r'''
     Watch Salt's event bus and block until the given tag is matched
 
-    .. versionadded:: Boron
+    .. versionadded:: 2016.3.0
 
     This is useful for utilizing Salt's event bus from shell scripts or for
     taking simple actions directly from the CLI.

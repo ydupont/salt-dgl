@@ -111,7 +111,7 @@ def failhard(role):
 
 class GitProvider(object):
     '''
-    Base class for gitfs/git_pillar provider classes Should never be used
+    Base class for gitfs/git_pillar provider classes. Should never be used
     directly.
 
     self.provider should be set in the sub-class' __init__ function before
@@ -916,7 +916,7 @@ class Pygit2(GitProvider):
                     # https://github.com/libgit2/libgit2/issues/2122
                     if "Error stat'ing config file" not in str(exc):
                         raise
-                    home = pwd.getpwnam(salt.utils.get_user).pw_dir
+                    home = pwd.getpwnam(salt.utils.get_user()).pw_dir
                     pygit2.settings.search_path[pygit2.GIT_CONFIG_LEVEL_GLOBAL] = home
                     self.repo = pygit2.Repository(self.cachedir)
             except KeyError:
@@ -1027,6 +1027,7 @@ class Pygit2(GitProvider):
                     and isinstance(self.credentials, pygit2.Keypair):
                 log.error(
                     'Unable to fetch SSH-based {0} remote \'{1}\'. '
+                    'You may need to add ssh:// to the repo string or '
                     'libgit2 must be compiled with libssh2 to support '
                     'SSH authentication.'.format(self.role, self.id)
                 )
@@ -1970,6 +1971,13 @@ class GitBase(object):
                 elif self.verify_dulwich(quiet=True):
                     self.provider = 'dulwich'
             else:
+                # Ensure non-lowercase providers work
+                try:
+                    desired_provider = desired_provider.lower()
+                except AttributeError:
+                    # Should only happen if someone does something silly like
+                    # set the provider to a numeric value.
+                    desired_provider = str(desired_provider).lower()
                 if desired_provider not in self.valid_providers:
                     log.critical(
                         'Invalid {0}_provider \'{1}\'. Valid choices are: {2}'
@@ -2297,11 +2305,12 @@ class GitFS(GitBase):
         '''
         if 'env' in load:
             salt.utils.warn_until(
-                'Boron',
-                'Passing a salt environment should be done using \'saltenv\' '
-                'not \'env\'. This functionality will be removed in Salt Boron.'
-            )
-            load['saltenv'] = load.pop('env')
+                'Oxygen',
+                'Parameter \'env\' has been detected in the argument list.  This '
+                'parameter is no longer used and has been replaced by \'saltenv\' '
+                'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+                )
+            load.pop('env')
 
         ret = {'data': '',
                'dest': ''}
@@ -2333,11 +2342,12 @@ class GitFS(GitBase):
         '''
         if 'env' in load:
             salt.utils.warn_until(
-                'Boron',
-                'Passing a salt environment should be done using \'saltenv\' '
-                'not \'env\'. This functionality will be removed in Salt Boron.'
-            )
-            load['saltenv'] = load.pop('env')
+                'Oxygen',
+                'Parameter \'env\' has been detected in the argument list.  This '
+                'parameter is no longer used and has been replaced by \'saltenv\' '
+                'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+                )
+            load.pop('env')
 
         if not all(x in load for x in ('path', 'saltenv')):
             return ''
@@ -2366,11 +2376,12 @@ class GitFS(GitBase):
         '''
         if 'env' in load:
             salt.utils.warn_until(
-                'Boron',
-                'Passing a salt environment should be done using \'saltenv\' '
-                'not \'env\'. This functionality will be removed in Salt Boron.'
-            )
-            load['saltenv'] = load.pop('env')
+                'Oxygen',
+                'Parameter \'env\' has been detected in the argument list.  This '
+                'parameter is no longer used and has been replaced by \'saltenv\' '
+                'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+                )
+            load.pop('env')
 
         if not os.path.isdir(self.file_list_cachedir):
             try:
@@ -2438,11 +2449,12 @@ class GitFS(GitBase):
         '''
         if 'env' in load:
             salt.utils.warn_until(
-                'Boron',
-                'Passing a salt environment should be done using \'saltenv\' '
-                'not \'env\'. This functionality will be removed in Salt Boron.'
-            )
-            load['saltenv'] = load.pop('env')
+                'Oxygen',
+                'Parameter \'env\' has been detected in the argument list.  This '
+                'parameter is no longer used and has been replaced by \'saltenv\' '
+                'as of Salt Carbon.  This warning will be removed in Salt Oxygen.'
+                )
+            load.pop('env')
 
         if load['saltenv'] not in self.envs():
             return {}

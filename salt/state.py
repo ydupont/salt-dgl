@@ -199,7 +199,7 @@ def find_name(name, state, high):
                         if len(arg) != 1:
                             continue
                         if arg[next(iter(arg))] == name:
-                            ext_id.append((name, state))
+                            ext_id.append((nid, state))
     return ext_id
 
 
@@ -1853,7 +1853,7 @@ class State(object):
                     continue
                 if r_state == 'onfail':
                     if run_dict[tag]['result'] is True:
-                        fun_stats.add('onfail')
+                        fun_stats.add('onfail')  # At least one state is OK
                         continue
                 else:
                     if run_dict[tag]['result'] is False:
@@ -1884,8 +1884,8 @@ class State(object):
                 status = 'met'
             else:
                 status = 'pre'
-        elif 'onfail' in fun_stats:
-            status = 'onfail'
+        elif 'onfail' in fun_stats and 'met' not in fun_stats:
+            status = 'onfail'  # all onfail states are OK
         elif 'onchanges' in fun_stats and 'onchangesmet' not in fun_stats:
             status = 'onchanges'
         elif 'change' in fun_stats:
@@ -3364,17 +3364,7 @@ class MasterHighState(HighState):
     Execute highstate compilation from the master
     '''
     def __init__(self, master_opts, minion_opts, grains, id_,
-                 saltenv=None,
-                 env=None):
-        if isinstance(env, six.string_types):
-            salt.utils.warn_until(
-                'Boron',
-                'Passing a salt environment should be done using \'saltenv\' '
-                'not \'env\'. This functionality will be removed in Salt '
-                'Boron.'
-            )
-            # Backwards compatibility
-            saltenv = env
+                 saltenv=None):
         # Force the fileclient to be local
         opts = copy.deepcopy(minion_opts)
         opts['file_client'] = 'local'

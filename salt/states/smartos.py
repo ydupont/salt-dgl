@@ -7,7 +7,7 @@ Management of SmartOS Standalone Compute Nodes
 :depends:       vmadm, imgadm
 :platform:      smartos
 
-.. versionadded:: Boron
+.. versionadded:: 2016.3.0
 
 .. code-block:: yaml
 
@@ -757,7 +757,7 @@ def vm_present(name, vmconfig, config=None):
 
         # create vm
         if ret['result']:
-            uuid = __salt__['vmadm.create'](**vmconfig) if not __opts__['test'] else None
+            uuid = __salt__['vmadm.create'](**vmconfig) if not __opts__['test'] else True
             if not isinstance(uuid, (bool)) and 'Error' in uuid:
                 ret['result'] = False
                 ret['comment'] = "{0}".format(uuid['Error'])
